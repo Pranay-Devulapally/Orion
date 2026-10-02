@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Orion — Personal AI</title>
+<style>
+  :root{
+    --bg:#F3EDE3;
+    --bg-2:#EBE4D6;
+    --bg-3:#E2D9C8;
+    --border:#D4CBB8;
+    --text:#1B1F3B;
+    --muted:#5A5870;
+    --primary:#1B1F3B;
+    --primary-hover:#2A2F5D;
+    --danger:#ef4444;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{max-width:720px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);}
+
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;border-bottom:1px solid var(--border);
+    background:var(--bg);position:sticky;top:0;z-index:20;
+  }
+  .icon-btn{
+    width:44px;height:44px;border-radius:12px;border:1px solid var(--border);
+    background:var(--bg-2);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--text);flex-shrink:0;
+  }
+  .icon-btn:active{background:var(--bg-3);}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;}
+  .brand .logo{
+    width:38px;height:38px;border-radius:10px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;
+  }
+  .avatar-btn{
+    width:44px;height:44px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);flex-shrink:0;
+  }
+
+  main{flex:1;padding:18px 16px 90px;overflow-x:hidden;}
+  h1,h2,h3{margin:0;}
+  .muted{color:var(--muted);}
+  .hidden{display:none !important;}
+
+  @media (max-width: 560px){
+    .apps-grid{grid-template-columns:1fr;}
+    .greeting h1{font-size:24px;}
+    .auth-wrap{padding:8px 0 24px;}
+    .module-head b{font-size:16px;}
+  }
+  @media (min-width: 800px){
+    #app{max-width:960px;}
+    .apps-grid{grid-template-columns:1fr 1fr 1fr;}
+    #accountDrawer{width:360px;}
+  }
+  @media (min-width: 1100px){
+    #app{max-width:1080px;}
+    .module{left:50%;transform:translateX(-50%);width:min(1080px,100%);right:auto;}
+    .module.open{transform:translateX(-50%);}
+  }
+  .chat-input-row{padding-bottom:max(10px, env(safe-area-inset-bottom));}
+  .snippet-row{display:flex;gap:8px;flex-wrap:wrap;padding:8px 10px;background:#101226;}
+  .snippet-row button{border:1px solid #3a3d5c;background:#1c1f3a;color:#e8e6f2;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;}
+  html[data-theme="dark"]{
+    --bg:#14161f;--bg-2:#1c1f2b;--bg-3:#262a3a;--border:#34384a;--text:#f4f1ea;--muted:#b7b4c6;--primary:#ece7dc;--primary-hover:#fff;
+  }
+  html[data-theme="dark"] .ai-banner{color:#14161f;}
+  html[data-theme="dark"] .btn{color:#14161f;}
+
+
+  .greeting h1{font-size:28px;font-weight:800;}
+  .greeting .name{font-size:20px;color:var(--muted);margin-top:2px;}
+  .greeting .datetime{margin-top:6px;font-size:14px;color:var(--muted);}
+
+  .ai-banner{
+    margin-top:18px;background:var(--primary);color:#fff;border-radius:20px;padding:18px;
+    display:flex;gap:14px;align-items:flex-start;cursor:pointer;
+  }
+  .ai-banner .logo{background:rgba(255,255,255,0.15);}
+  .ai-banner b{font-size:17px;}
+  .ai-banner p{margin:4px 0 0;font-size:14px;opacity:.85;line-height:1.4;}
+
+  .section-title{margin-top:24px;margin-bottom:10px;font-size:15px;font-weight:800;display:flex;justify-content:space-between;align-items:center;}
+  .section-title a{font-size:14px;font-weight:600;color:var(--text);cursor:pointer;}
+
+  .apps-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .app-card{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:16px;
+    cursor:pointer;min-height:78px;
+  }
+  .app-card:active{background:var(--bg-3);}
+  .app-card b{font-size:15px;display:block;}
+  .app-card span{font-size:13px;color:var(--muted);display:block;margin-top:4px;}
+
+  .chat-preview{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:10px;cursor:pointer;
+  }
+  .chat-preview b{font-size:15px;}
+  .chat-preview p{margin:4px 0 0;color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .empty-note{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px;}
+
+  .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:40;display:none;}
+  .drawer-backdrop.open{display:block;}
+  .drawer{
+    position:fixed;top:0;bottom:0;background:var(--bg);z-index:41;
+    box-shadow:0 0 30px rgba(0,0,0,.15);transition:transform .22s ease;
+    display:flex;flex-direction:column;
+  }
+  #sidebar{left:0;width:min(82vw,340px);transform:translateX(-100%);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #sidebar.open{transform:translateX(0);}
+  #accountDrawer{right:0;top:64px;width:min(78vw,320px);border-radius:16px 0 0 16px;transform:translateX(110%);padding:10px;max-height:70vh;}
+  #accountDrawer.open{transform:translateX(0);}
+
+  .drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .drawer-head b{font-size:19px;font-weight:800;}
+  .nav-item{padding:14px 6px;font-size:16px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .nav-item:active{color:var(--muted);}
+  .nav-item:last-child{border-bottom:none;}
+
+  .acc-top{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center;margin-bottom:8px;}
+  .acc-top .logo{width:34px;height:34px;font-size:14px;}
+  .acc-top b{font-size:15px;display:block;}
+  .acc-top span{font-size:12px;color:var(--muted);}
+  .acc-item{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;font-size:15px;}
+  .acc-item:active{background:var(--bg-3);}
+
+  .module{position:fixed;inset:0;background:var(--bg);z-index:30;display:none;flex-direction:column;}
+  .module.open{display:flex;}
+  .module-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+  .module-head b{font-size:19px;font-weight:800;}
+  .close-btn{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;color:var(--text);}
+  .module-body{flex:1;overflow-y:auto;padding:16px;max-width:720px;margin:0 auto;width:100%;}
+
+  .tabbar{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);}
+  .tabbtn{flex:1;text-align:center;padding:10px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);font-size:14px;cursor:pointer;}
+  .tabbtn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+  .code-console{background:#14162a;color:#e7e7ee;}
+  .filebar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#14162a;color:#ccc;font-size:14px;}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block;}
+  .fileline{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#1b1e33;color:#eee;font-size:13px;}
+  .code-area{flex:1;background:#0e1020;color:#e5e5ef;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;padding:14px;border:none;outline:none;resize:none;width:100%;line-height:1.5;}
+  .explorer-item{display:flex;align-items:center;gap:10px;padding:12px 6px;color:#eee;font-size:15px;cursor:pointer;border-bottom:1px solid #262a44;}
+  .status-bar{display:flex;justify-content:space-between;padding:8px 16px;background:var(--primary);color:#fff;font-size:12px;}
+  .btn{background:var(--primary);color:#fff;border:none;border-radius:12px;padding:13px 18px;font-size:15px;font-weight:600;cursor:pointer;width:100%;}
+  .btn:active{background:var(--primary-hover);}
+  .btn.secondary{background:var(--bg-2);color:var(--text);border:1px solid var(--border);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .input, textarea.input{width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;font-size:15px;color:var(--text);outline:none;font-family:inherit;}
+  textarea.input{resize:vertical;min-height:70px;}
+
+  .chatlog{display:flex;flex-direction:column;gap:10px;}
+  .bubble{max-width:88%;padding:12px 14px;border-radius:16px;font-size:15px;line-height:1.45;white-space:pre-wrap;}
+  .bubble.assistant{background:var(--bg-2);border:1px solid var(--border);align-self:flex-start;}
+  .bubble.user{background:var(--primary);color:#fff;align-self:flex-end;}
+  .chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg);position:sticky;bottom:0;}
+  .chat-input-row .input{flex:1;}
+  .send-btn{width:48px;height:48px;border-radius:12px;background:var(--primary);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:18px;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;border-bottom:1px solid var(--border);}
+  .chip{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:13px;white-space:nowrap;color:var(--muted);}
+  .chip.done{color:var(--text);}
+
+  .card{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .list-item{display:flex;justify-content:space-between;align-items:center;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px;font-size:15px;}
+  .small-link{font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer;}
+  .field-label{font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--muted);}
+  .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-msg{color:var(--muted);font-size:14px;display:flex;align-items:center;gap:8px;padding:10px 0;}
+  iframe.preview{width:100%;height:260px;border:1px solid var(--border);border-radius:12px;background:#fff;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;padding:10px 18px;border-radius:30px;font-size:14px;z-index:100;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  #authGate{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;overflow-y:auto;padding:32px 20px;}
+  #authGate.open{display:flex;}
+  .auth-wrap{max-width:400px;margin:0 auto;width:100%;}
+  .auth-logo{width:56px;height:56px;border-radius:16px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;margin:0 auto 14px;}
+  .auth-title{text-align:center;font-size:22px;font-weight:800;margin-bottom:4px;}
+  .auth-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px;}
+  .auth-tabs{display:flex;gap:8px;margin-bottom:16px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:4px;}
+  .auth-tab{flex:1;text-align:center;padding:10px;border-radius:9px;font-size:14px;cursor:pointer;color:var(--muted);}
+  .auth-tab.active{background:var(--primary);color:#fff;}
+  .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:13px;}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .google-btn{width:100%;background:#fff;color:#1B1F3B;border:1px solid var(--border);border-radius:12px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .auth-error{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;}
+  .steps-list{font-size:13px;color:var(--muted);line-height:1.6;padding-left:18px;margin:10px 0 16px;}
+
+  @media (max-width: 560px){
+    .apps-grid{grid-template-columns:1fr;}
+  }
+  @media (min-width: 800px){
+    #app{max-width:960px;}
+    .apps-grid{grid-template-columns:1fr 1fr 1fr;}
+  }
+  @media (min-width: 1100px){
+    #app{max-width:1080px;}
+    .module{left:50%;right:auto;width:min(1080px,100%);transform:translateX(-50%);}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="icon-btn" onclick="openSidebar()">☰</div>
+      <div class="brand"><div class="logo">O</div>Orion</div>
+    </div>
+    <div class="avatar-btn" onclick="openAccount()">👤</div>
+  </header>
+
+  <main id="dashboard">
+    <div class="greeting">
+      <h1 id="greetText">Good evening,</h1>
+      <div class="name" id="userNameDisplay">Guest</div>
+      <div class="datetime" id="dateTimeDisplay"></div>
+    </div>
+
+    <div class="ai-banner" onclick="openModule('chat')">
+      <div class="logo">O</div>
+      <div>
+        <b>✨ Main AI Assistant</b>
+        <p>Ask anything. Orion chooses the right tools behind the scenes.</p>
+      </div>
+    </div>
+
+    <div class="section-title">Apps</div>
+    <div class="apps-grid">
+      <div class="app-card" onclick="openCodingFrom(null)"><b>💻 Coding Studio</b><span>HTML, CSS, JS, Python</span></div>
+      <div class="app-card" onclick="openModule('writing')"><b>✍️ Writing Studio</b><span>Emails, essays, rewrite</span></div>
+      <div class="app-card" onclick="openModule('research')"><b>🔎 Research Assistant</b><span>Topics, sources, reports</span></div>
+      <div class="app-card" onclick="openModule('design')"><b>🧩 UI/UX Designer</b><span>Wireframes and layouts</span></div>
+      <div class="app-card" onclick="openModule('task')"><b>✅ Task Solver</b><span>Plan, build, prototype</span></div>
+      <div class="app-card" onclick="openModule('files')"><b>📁 File Manager</b><span>Folders then files</span></div>
+      <div class="app-card" onclick="openModule('docbuilder')"><b>📄 Document Builder</b><span>Reports and notes</span></div>
+      <div class="app-card" onclick="openModule('kb')"><b>🗒️ Knowledge Base</b><span>Notes you can edit</span></div>
+      <div class="app-card" onclick="openModule('memory')"><b>🧠 Memory</b><span>Projects and preferences</span></div>
+      <div class="app-card" onclick="openModule('plugins')"><b>🔌 Plugin System</b><span>Future tools</span></div>
+    </div>
+
+    <div class="section-title">Recent chats <a onclick="deleteAllChats()">🗑️ Delete all</a></div>
+    <div id="recentChatsList"></div>
+  </main>
+
+  <div class="drawer-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+  <div class="drawer" id="sidebar">
+    <div class="drawer-head"><b>Orion</b><div class="icon-btn" onclick="closeSidebar()">✕</div></div>
+    <div class="nav-item" onclick="closeSidebar()">Home</div>
+    <div class="nav-item" onclick="goto('chat')">Main AI Chat</div>
+    <div class="nav-item" onclick="goto('coding')">Coding Studio</div>
+    <div class="nav-item" onclick="goto('writing')">Writing Studio</div>
+    <div class="nav-item" onclick="goto('research')">Research Assistant</div>
+    <div class="nav-item" onclick="goto('design')">UI/UX Designer</div>
+    <div class="nav-item" onclick="goto('task')">Task Solver</div>
+    <div class="nav-item" onclick="goto('files')">File Manager</div>
+    <div class="nav-item" onclick="goto('docbuilder')">Document Builder</div>
+    <div class="nav-item" onclick="goto('kb')">Knowledge Base</div>
+    <div class="nav-item" onclick="goto('memory')">Memory</div>
+    <div class="nav-item" onclick="goto('plugins')">Plugin System</div>
+    <div class="nav-item" onclick="goto('settings')">Settings</div>
+  </div>
+
+  <div class="drawer-backdrop" id="accountBackdrop" onclick="closeAccount()"></div>
+  <div class="drawer" id="accountDrawer">
+    <div class="acc-top">
+      <div class="logo">O</div>
+      <div><b id="accName">Guest</b><span>Orion account</span></div>
+    </div>
+    <div class="acc-item" onclick="closeAccount();goto('settings');">My Profile</div>
+    <div class="acc-item" onclick="closeAccount();goto('settings');">Preferences</div>
+    <div class="acc-item" onclick="closeAccount();goto('memory');">Memory</div>
+    <div class="acc-item" onclick="closeAccount();goto('settings');">Settings</div>
+  </div>
+
+  <div class="module" id="mod-chat">
+    <div class="module-head"><b>✨ Main AI Assistant</b><span style="display:flex;gap:8px;"><button class="close-btn" onclick="newChat()">New</button><button class="close-btn" onclick="deleteActiveChat()">🗑️</button><button class="close-btn" onclick="closeModule('chat')">Close</button></span></div>
+    <div class="module-body" id="chatBody" style="display:flex;flex-direction:column;">
+      <div class="chatlog" id="chatLog"></div>
+    </div>
+    <div class="chat-input-row">
+      <input class="input" id="chatInput" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="send-btn" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+
+  <div class="module" id="mod-coding">
+    <div class="module-head"><b>💻 Code Studio</b><button class="close-btn" id="codingCloseBtn" onclick="closeCoding()">Close</button></div>
+    <div class="filebar">
+      <span class="dot" style="background:#ef4444"></span><span class="dot" style="background:#f59e0b"></span><span class="dot" style="background:#22c55e"></span>
+      <span id="codeActiveFile" style="margin-left:6px;">/index.html</span>
+      <div style="flex:1;"></div>
+      <span style="cursor:pointer;" onclick="askOrionForCode()">+</span>
+      <span style="cursor:pointer;" onclick="codeTab('preview')">▶</span>
+    </div>
+    <div class="tabbar">
+      <div class="tabbtn" id="tab-explorer" onclick="codeTab('explorer')">Explorer</div>
+      <div class="tabbtn" id="tab-git" onclick="codeTab('git')">Git</div>
+      <div class="tabbtn active" id="tab-editor" onclick="codeTab('editor')">Editor</div>
+      <div class="tabbtn" id="tab-preview" onclick="codeTab('preview')">Output</div>
+    </div>
+    <div class="module-body code-console" style="display:flex;flex-direction:column;padding:0;" id="codingBody">
+      <div id="codePane-editor" style="flex:1;display:flex;flex-direction:column;">
+        <div class="fileline"><span id="editorFileName">index.html</span><span style="flex:1;"></span><span style="cursor:pointer;color:#f66;" onclick="closeCodeFile()">×</span></div>
+        <div class="snippet-row">
+          <button type="button" onclick="insertSnippet('html')">HTML</button>
+          <button type="button" onclick="insertSnippet('css')">CSS</button>
+          <button type="button" onclick="insertSnippet('js')">JS</button>
+          <button type="button" onclick="insertSnippet('py')">Python</button>
+        </div>
+        <textarea class="code-area" id="codeArea" spellcheck="false" oninput="saveCodeEdit()"></textarea>
+      </div>
+      <div id="codePane-explorer" class="hidden" style="flex:1;padding:16px;">
+        <div class="row" style="margin-bottom:14px;"><span style="color:#9a9ab0;font-size:13px;letter-spacing:.05em;">WORKSPACE</span><div class="icon-btn" style="background:transparent;" onclick="addCodeFile()">+</div></div>
+        <div id="fileExplorerList"></div>
+      </div>
+      <div id="codePane-git" class="hidden" style="flex:1;padding:16px 16px 0;">
+        <div class="muted" style="color:#c9c9d6;margin-bottom:10px;">Paste a public GitHub repo like owner/repo</div>
+        <input class="input" id="gitRepoInput" style="background:#f3ede3;color:#1B1F3B;" placeholder="owner/repo">
+        <button class="btn" style="margin-top:12px;" onclick="gitImport()">Import</button>
+        <div id="gitMsg" class="muted" style="margin-top:10px;color:#c9c9d6;"></div>
+      </div>
+      <div id="codePane-preview" class="hidden" style="flex:1;padding:14px;background:var(--bg);">
+        <iframe id="codeOutputFrame" style="width:100%;height:100%;min-height:400px;border:1px solid var(--border);border-radius:12px;background:#fff;"></iframe>
+      </div>
+    </div>
+    <div class="status-bar"><span>main</span><span>UTF-8</span><span>Orion Studio</span></div>
+  </div>
+
+  <div class="module" id="mod-task">
+    <div class="module-head"><b>✅ Task Solver</b><button class="close-btn" onclick="closeModule('task')">Close</button></div>
+    <div class="chips">
+      <div class="chip" id="chip-plan">○ Plan</div>
+      <div class="chip" id="chip-design">○ Design</div>
+      <div class="chip" id="chip-build">○ Build</div>
+      <div class="chip" id="chip-test">○ Test</div>
+      <div class="chip" id="chip-prototype">○ Prototype</div>
+    </div>
+    <div class="module-body" id="taskBody">
+      <div class="bubble assistant" style="max-width:100%;">I am Orion Task Solver.
+
+Tell me what to build. Example:
+- Build a portfolio website
+- Make a notes app
+- Create a school project page
+
+I will plan, build files, preview a prototype, then you can deploy.</div>
+      <div id="taskLog" style="margin-top:12px;"></div>
+    </div>
+    <div class="chat-input-row">
+      <input class="input" id="taskInput" placeholder="Describe the project to build..." onkeydown="if(event.key==='Enter')runTaskSolver()">
+      <button class="send-btn" onclick="runTaskSolver()">↑</button>
+    </div>
+  </div>
+
+  <div class="module" id="mod-writing">
+    <div class="module-head"><b>✍️ Writing Studio</b><button class="close-btn" onclick="closeModule('writing')">Close</button></div>
+    <div class="module-body">
+      <div class="field-label">Type</div>
+      <select class="input" id="writingType">
+        <option>Email</option><option>Essay</option><option>Report</option><option>Blog post</option>
+        <option>Article</option><option>Documentation</option><option>Rewrite / Grammar fix</option>
+        <option>Translation</option><option>Summary</option>
+      </select>
+      <div class="field-label">Describe what you need (or paste text to rewrite/summarize)</div>
+      <textarea class="input" id="writingPrompt" placeholder="e.g. Write a follow-up email to a client about a delayed shipment"></textarea>
+      <button class="btn" style="margin-top:14px;" onclick="runWriting()">Generate</button>
+      <div id="writingLoading"></div>
+      <div id="writingOutputWrap" class="hidden" style="margin-top:16px;">
+        <div class="card"><div id="writingOutput" style="white-space:pre-wrap;font-size:15px;"></div></div>
+        <button class="btn secondary" onclick="copyText('writingOutput')">📋 Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-research">
+    <div class="module-head"><b>🔎 Research Assistant</b><button class="close-btn" onclick="closeModule('research')">Close</button></div>
+    <div class="module-body">
+      <div class="field-label">Topic</div>
+      <input class="input" id="researchTopic" placeholder="e.g. Formula 1 aerodynamics">
+      <button class="btn" style="margin-top:14px;" onclick="runResearch()">Research</button>
+      <div class="muted" style="font-size:12px;margin-top:8px;">Draws on Orion's built-in knowledge — live web sources aren't connected in this build yet.</div>
+      <div id="researchLoading"></div>
+      <div id="researchOutputWrap" class="hidden" style="margin-top:16px;">
+        <div class="card"><div id="researchOutput" style="white-space:pre-wrap;font-size:15px;"></div></div>
+        <button class="btn secondary" onclick="saveResearchToKB()">Save to Knowledge Base</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-design">
+    <div class="module-head"><b>🧩 UI/UX Designer</b><button class="close-btn" onclick="closeModule('design')">Close</button></div>
+    <div class="module-body">
+      <div class="field-label">Describe the screen or flow</div>
+      <textarea class="input" id="designPrompt" placeholder="e.g. Login screen for a fitness app with email, password, and social login"></textarea>
+      <button class="btn" style="margin-top:14px;" onclick="runDesign()">Generate wireframe</button>
+      <div id="designLoading"></div>
+      <div id="designOutputWrap" class="hidden" style="margin-top:16px;">
+        <div id="wireframeBox" class="card"></div>
+        <div class="card"><div id="designNotes" style="white-space:pre-wrap;font-size:14px;"></div></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" style="flex:1;" onclick="downloadDesignPng()">⬇️ Download as PNG</button>
+          <button class="btn secondary" style="flex:1;" onclick="clearDesign()">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-files">
+    <div class="module-head"><b>📁 Files</b><button class="close-btn" onclick="closeModule('files')">Close</button></div>
+    <div class="module-body">
+      <div id="filesRootView">
+        <button class="btn secondary" style="width:auto;padding:10px 18px;" onclick="createFolder()">+ Folder</button>
+        <div class="muted" style="margin:14px 0;font-size:14px;">Create a folder first, then open it to add files.</div>
+        <div id="folderList"></div>
+        <div id="noFoldersMsg" class="empty-note hidden">No folders yet. Create a folder first.</div>
+      </div>
+      <div id="filesFolderView" class="hidden">
+        <div class="row" style="margin-bottom:12px;">
+          <span class="small-link" onclick="backToFolders()">‹ Folders</span>
+          <b id="folderTitle"></b>
+          <span class="small-link" onclick="createFileInFolder()">+ File</span>
+        </div>
+        <div id="folderFileList"></div>
+        <div id="fileEditor" class="hidden" style="margin-top:12px;">
+          <div class="field-label">Editing <span id="fileEditorName"></span></div>
+          <textarea class="input" id="fileEditorBody" style="min-height:180px;font-family:ui-monospace,Menlo,monospace;" oninput="saveOpenFile()"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn" style="flex:1;" onclick="downloadOpenFile()">⬇️ Download</button>
+            <button class="btn secondary" style="flex:1;" onclick="deleteOpenFile()">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-docbuilder">
+    <div class="module-head"><b>📄 Document Builder</b><button class="close-btn" onclick="closeModule('docbuilder')">Close</button></div>
+    <div class="module-body">
+      <div class="field-label">Document type</div>
+      <select class="input" id="docType"><option>Report</option><option>Notes</option><option>Project summary</option><option>Documentation</option></select>
+      <div class="field-label">What should it cover?</div>
+      <textarea class="input" id="docPrompt" placeholder="e.g. Quarterly summary of my renewable energy research"></textarea>
+      <button class="btn" style="margin-top:14px;" onclick="runDocBuilder()">Build document</button>
+      <div id="docLoading"></div>
+      <div id="docOutputWrap" class="hidden" style="margin-top:16px;">
+        <div class="card"><div id="docOutput" style="white-space:pre-wrap;font-size:15px;"></div></div>
+        <button class="btn" onclick="downloadDoc()">⬇️ Download as .txt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-kb">
+    <div class="module-head"><b>🗒️ Knowledge Base</b><button class="close-btn" onclick="closeModule('kb')">Close</button></div>
+    <div class="module-body">
+      <input class="input" id="kbSearch" placeholder="Search your notes..." oninput="renderKB()">
+      <button class="btn secondary" style="margin-top:10px;" onclick="newKBNote()">+ New note</button>
+      <div id="kbList" style="margin-top:14px;"></div>
+      <div id="kbEmpty" class="empty-note hidden">No notes yet. Save research or add a note.</div>
+      <div id="kbEditor" class="hidden" style="margin-top:14px;">
+        <div class="field-label">Title</div>
+        <input class="input" id="kbTitle" oninput="saveKBEditor()">
+        <div class="field-label">Note</div>
+        <textarea class="input" id="kbBody" style="min-height:180px;" oninput="saveKBEditor()" placeholder="Write here. It saves in this note."></textarea>
+        <button class="btn secondary" style="margin-top:10px;" onclick="deleteOpenNote()">🗑️ Delete note</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-memory">
+    <div class="module-head"><b>🧠 Memory</b><button class="close-btn" onclick="closeModule('memory')">Close</button></div>
+    <div class="module-body">
+      <div class="field-label">Goals</div>
+      <textarea class="input" id="memGoals" oninput="onMemInput()" placeholder="What are you working toward?"></textarea>
+      <div class="field-label">Preferences</div>
+      <textarea class="input" id="memPrefs" oninput="onMemInput()" placeholder="How should Orion talk to you / format things?"></textarea>
+      <div class="field-label">Projects</div>
+      <textarea class="input" id="memProjects" oninput="onMemInput()" placeholder="Current projects"></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="btn" style="flex:1;" id="memSaveBtn" onclick="saveMemory()" disabled>Save</button>
+        <button class="btn secondary" style="flex:1;" onclick="clearMemory()">Clear</button>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:10px;" id="memStatus">Synced to your Firebase account when signed in.</div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-plugins">
+    <div class="module-head"><b>🔌 Plugin System</b><button class="close-btn" onclick="closeModule('plugins')">Close</button></div>
+    <div class="module-body" id="pluginList"></div>
+  </div>
+
+  <div class="module" id="mod-settings">
+    <div class="module-head"><b>⚙️ Settings</b><button class="close-btn" onclick="closeModule('settings')">Close</button></div>
+    <div class="module-body">
+      <div class="section-title" style="margin-top:0;">Profile</div>
+      <div class="field-label">Your name</div>
+      <input class="input" id="settingsName" oninput="onNameInput()">
+      <div class="muted" style="font-size:13px;margin-top:8px;" id="fbAccountEmail">Not connected</div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn" style="flex:1;" id="nameSaveBtn" onclick="saveProfile()" disabled>Save</button>
+        <button class="btn secondary" style="flex:1;" id="nameCancelBtn" onclick="cancelProfile()" disabled>Cancel</button>
+      </div>
+      <button class="btn secondary" style="margin-top:10px;" onclick="signOutUser()">🚪 Sign out</button>
+
+      <div class="section-title">Preferences</div>
+      <div class="field-label">Theme</div>
+      <select class="input" id="themeSelect" onchange="saveTheme()">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+
+      <div class="section-title">AI providers</div>
+      <div class="muted" style="font-size:13px;margin-bottom:10px;">Add your own key. Chat still says it is not connected until a provider is wired.</div>
+      <div id="providerList"></div>
+
+      <div class="section-title">Data</div>
+      <button class="btn secondary" onclick="deleteAllChats()">🗑️ Clear chat history</button>
+      <button class="btn secondary" style="margin-top:8px;" onclick="clearMemory()">🗑️ Clear memory</button>
+      <button class="btn secondary" style="margin-top:8px;" onclick="exportMyData()">⬇️ Export my data</button>
+      <button class="btn secondary" style="margin-top:8px;" onclick="deleteMyAccount()">Delete my account</button>
+
+      <div class="section-title">Privacy</div>
+      <div class="card"><div class="muted" style="font-size:13px;">Your chats, notes, files, and memory stay under your own Firebase user id. Other people cannot open them.</div></div>
+
+      <div class="section-title">Authors</div>
+      <div class="card"><b>Founder & Builder: Pranay Devulapally</b></div>
+
+      <div class="section-title">About</div>
+      <div class="card"><div class="muted" style="font-size:13px;">Orion — personal AI workspace. Website build.</div></div>
+
+      <div id="adminBlock" class="hidden">
+        <div class="section-title">Admin</div>
+        <div class="card">
+          <div class="muted" style="font-size:13px;margin-bottom:8px;">Only your account sees this. A website cannot list or delete other Firebase users by itself. That needs a Cloud Function.</div>
+          <div id="adminUserLine" style="font-size:14px;margin-bottom:8px;"></div>
+          <button class="btn secondary" onclick="closeModule('settings');editFbConfig();showAuthGate();">Reconnect / change project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="authGate">
+    <div class="auth-wrap">
+      <div class="auth-logo">O</div>
+      <div class="auth-title">Orion</div>
+      <div class="auth-sub">Sign in to sync your data with Firebase</div>
+      <div class="auth-error hidden" id="authNotice"></div>
+
+      <div id="fbSetupPane">
+        <div class="field-label" style="margin-top:0;">One-time setup</div>
+        <ol class="steps-list">
+          <li>Open your project at console.firebase.google.com</li>
+          <li>Firestore → Rules: allow only the signed-in user under users/{uid}</li>
+          <li>Authentication → Email/Password and Google enabled</li>
+          <li>Authentication → Settings → Authorized domains includes localhost</li>
+          <li>Project settings → Web app → paste the firebaseConfig object below</li>
+        </ol>
+        <textarea class="input" id="fbConfigInput" rows="6" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", ... }'></textarea>
+        <button class="btn" style="margin-top:12px;" onclick="saveFbConfigFromForm()">Connect Firebase</button>
+        <button class="btn secondary" style="margin-top:8px;" onclick="skipCloud()">Skip for now — use this device only</button>
+      </div>
+
+      <div id="fbAuthPane" class="hidden">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="authTab-login" onclick="authTab('login')">Log in</div>
+          <div class="auth-tab" id="authTab-signup" onclick="authTab('signup')">Sign up</div>
+        </div>
+        <input class="input" id="authEmail" type="email" placeholder="Email" style="margin-bottom:10px;">
+        <input class="input" id="authPassword" type="password" placeholder="Password">
+        <button class="btn" style="margin-top:14px;" id="authSubmitBtn" data-mode="login" onclick="submitAuthForm()">Log in</button>
+        <div class="auth-divider">or</div>
+        <button class="google-btn" onclick="googleSignIn()">Continue with Google</button>
+        <div class="auth-error hidden" id="authError"></div>
+        <button class="btn secondary" style="margin-top:12px;" onclick="skipCloud()">Skip for now</button>
+        <div class="small-link" style="display:block;text-align:center;margin-top:18px;" onclick="editFbConfig()">Change Firebase config</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+function updateClock(){
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h<12?'Good morning,':h<18?'Good afternoon,':'Good evening,';
+  document.getElementById('greetText').textContent = greet;
+  const opts = {hour:'2-digit',minute:'2-digit',hour12:true};
+  const time = now.toLocaleTimeString([],opts).toLowerCase();
+  const date = now.toLocaleDateString([],{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('dateTimeDisplay').textContent = time + ' · ' + date;
+}
+updateClock(); setInterval(updateClock,30000);
+
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarBackdrop').classList.add('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarBackdrop').classList.remove('open');}
+function openAccount(){document.getElementById('accountDrawer').classList.add('open');document.getElementById('accountBackdrop').classList.add('open');}
+function closeAccount(){document.getElementById('accountDrawer').classList.remove('open');document.getElementById('accountBackdrop').classList.remove('open');}
+function goto(name){
+  closeSidebar();closeAccount();
+  if(name==='coding'){ openCodingFrom(null); return; }
+  openModule(name);
+}
+
+function openModule(name){
+  document.getElementById('mod-'+name).classList.add('open');
+  if(name==='files') renderFiles();
+  if(name==='kb') renderKB();
+  if(name==='plugins') renderPlugins();
+  if(name==='settings') renderSettings();
+  if(name==='memory') renderMemory();
+  if(name==='coding') renderCodeExplorer();
+}
+function closeModule(name){document.getElementById('mod-'+name).classList.remove('open');}
+
+const LS_PREFIX='orion_';
+function lsGet(key,fallback){
+  try{const v=localStorage.getItem(LS_PREFIX+key); return v?JSON.parse(v):fallback;}catch(e){return fallback;}
+}
+function lsSet(key,val){
+  try{localStorage.setItem(LS_PREFIX+key, JSON.stringify(val));}catch(e){}
+}
+
+/* =================== FIREBASE ==================== */
+const DEFAULT_FB_CONFIG = {
+  apiKey: "AIzaSyBT6kH-H6uRv-yVZRPz8PDqupv55YaPBKk",
+  authDomain: "orion-e17c7.firebaseapp.com",
+  projectId: "orion-e17c7",
+  storageBucket: "orion-e17c7.firebasestorage.app",
+  messagingSenderId: "512200753903",
+  appId: "1:512200753903:web:2d3eb5b9c6cebf9e61511a",
+  measurementId: "G-JS5SQ79F0R"
+};
+let fbApp=null, fbAuth=null, fbDb=null, fbUser=null, fbConfigured=false;
+function getFbConfig(){ return lsGet('firebaseConfig', null) || DEFAULT_FB_CONFIG; }
+function setFbConfig(cfg){ lsSet('firebaseConfig', cfg); }
+function clearFbConfig(){ localStorage.removeItem(LS_PREFIX+'firebaseConfig'); }
+
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src; s.onload=()=>resolve(); s.onerror=()=>reject(new Error('load failed: '+src));
+    document.head.appendChild(s);
+  });
+}
+async function loadFirebaseSDK(){
+  if(window.firebase) return true;
+  try{
+    const v='10.12.2';
+    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-auth-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
+    return !!window.firebase;
+  }catch(e){
+    console.error('Firebase SDK failed to load (likely blocked in this preview — open the downloaded file directly to use Firebase).', e);
+    return false;
+  }
+}
+async function initFirebase(){
+  const cfg = getFbConfig();
+  if(!cfg) return;
+  const ok = await loadFirebaseSDK();
+  if(!ok){ setAuthGateNotice("Firebase couldn't load here — this preview link blocks it. Open the downloaded .html file directly in a browser to use Firebase."); return; }
+  try{
+    if(window.firebase.apps.length){
+      try{ await window.firebase.app().delete(); }catch(e){}
+    }
+    fbApp = window.firebase.initializeApp(cfg);
+    fbAuth = window.firebase.auth();
+    fbDb = window.firebase.firestore();
+    fbConfigured = true;
+    fbAuth.onAuthStateChanged(async (user)=>{
+      fbUser = user;
+      if(user){
+        hideAuthGate();
+        await syncFromCloud();
+      }else if(!window.__orionSkipCloud){
+        showAuthGate();
+      }
+    });
+    setAuthGateNotice('');
+  }catch(e){
+    console.error(e);
+    fbConfigured = false;
+    setAuthGateNotice(friendlyAuthError(e) || 'Could not connect with that Firebase config — copy it again from Project settings.');
+  }
+}
+
+/* Generic per-user document store: users/{uid}/data/{key} -> {value: ...} */
+async function storeSet(key, value){
+  lsSet(key, value);
+  if(fbConfigured && fbUser && fbDb){
+    try{ await fbDb.collection('users').doc(fbUser.uid).collection('data').doc(key).set({value}); }
+    catch(e){ console.error('cloud save failed for '+key, e); }
+  }
+}
+async function storeGet(key, fallback){
+  if(fbConfigured && fbUser && fbDb){
+    try{
+      const snap = await fbDb.collection('users').doc(fbUser.uid).collection('data').doc(key).get();
+      if(snap.exists) return snap.data().value;
+    }catch(e){ console.error('cloud read failed for '+key, e); }
+  }
+  return lsGet(key, fallback);
+}
+async function syncFromCloud(){
+  if(!(fbConfigured && fbUser && fbDb)) return;
+  profile = await storeGet('profile', profile);
+  fileManager = await storeGet('fileManager', fileManager);
+  let mem = await storeGet('memory', null); if(mem) lsSet('memory', mem);
+  let kb = await storeGet('kbNotes', null); if(kb) lsSet('kbNotes', kb);
+  let ch = await storeGet('chatHistory', null); if(ch){ chats = normalizeChats(ch); activeChatId = chats[0] ? chats[0].id : null; }
+  codeWorkspace = await storeGet('codeWorkspace', codeWorkspace);
+  applyProfile();
+  renderChatLog();
+  renderCodeExplorer();
+  if(document.getElementById('mod-files').classList.contains('open')) renderFiles();
+  if(document.getElementById('mod-memory').classList.contains('open')) renderMemory();
+  if(document.getElementById('mod-kb').classList.contains('open')) renderKB();
+  toast('Synced with your Firebase account');
+}
+
+/* Auth gate UI */
+function showAuthGate(){ document.getElementById('authGate').classList.add('open'); }
+function hideAuthGate(){ document.getElementById('authGate').classList.remove('open'); }
+function setAuthGateNotice(msg){
+  ['authError','authNotice'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('hidden', !msg);
+  });
+}
+function pageProtocolOk(){
+  const p = (location.protocol||'').toLowerCase();
+  return p==='http:' || p==='https:' || p==='chrome-extension:';
+}
+function envBlockMessage(){
+  return 'Firebase login cannot run from a downloaded file. This page opened as '+location.protocol+' Put Orion on an https website (Firebase Hosting) or open it with localhost, then sign in.';
+}
+function friendlyAuthError(e){
+  const code = e && e.code ? String(e.code) : '';
+  const raw = (e && e.message) || 'Something went wrong.';
+  if(!pageProtocolOk() || code.includes('operation-not-supported-in-this-environment')){
+    return envBlockMessage();
+  }
+  if(code.includes('unauthorized-domain') || raw.includes('unauthorized-domain')){
+    return 'This page address is not allowed yet. Open Orion through localhost or add this site under Authentication → Settings → Authorized domains. Opening the file by double-click often fails.';
+  }
+  if(code.includes('operation-not-allowed')) return 'That sign-in method is off. In Firebase, enable Email/Password and/or Google.';
+  if(code.includes('popup-blocked') || code.includes('cancelled-popup')) return 'The Google popup was blocked. Allow pop-ups, or use email sign-up.';
+  if(code.includes('invalid-api-key')) return 'The API key in the config is wrong. Copy the config again from Project settings.';
+  if(code.includes('invalid-email')) return 'That email does not look valid.';
+  if(code.includes('email-already-in-use')) return 'That email already has an account. Use Log in.';
+  if(code.includes('weak-password')) return 'Use a password with at least 6 characters.';
+  if(code.includes('user-not-found') || code.includes('invalid-credential') || code.includes('wrong-password')) return 'Email or password is wrong, or no account exists yet. Try Sign up.';
+  if(code.includes('network-request-failed')) return 'No internet, or Firebase was blocked. Check Wi‑Fi and try a normal browser tab.';
+  return raw;
+}
+function parseFirebaseConfig(raw){
+  let text = String(raw||'').trim();
+  if(!text) throw new Error('empty');
+  const assigned = text.match(/firebaseConfig\s*=\s*(\{[\s\S]*\})/);
+  if(assigned) text = assigned[1];
+  if(!text.startsWith('{')) text = '{' + text + '}';
+  return (new Function('"use strict"; return (' + text + ');'))();
+}
+function authTab(which){
+  document.getElementById('authTab-login').classList.toggle('active', which==='login');
+  document.getElementById('authTab-signup').classList.toggle('active', which==='signup');
+  document.getElementById('authSubmitBtn').textContent = which==='login' ? 'Log in' : 'Sign up';
+  document.getElementById('authSubmitBtn').dataset.mode = which;
+  setAuthGateNotice('');
+}
+async function saveFbConfigFromForm(){
+  const raw = document.getElementById('fbConfigInput').value.trim();
+  if(!raw){ setAuthGateNotice('Paste your Firebase config object first.'); return; }
+  let cfg;
+  try{
+    cfg = parseFirebaseConfig(raw);
+  }catch(e){
+    setAuthGateNotice("Couldn't read that config. Paste either the { ... } object or the whole const firebaseConfig = { ... } block.");
+    return;
+  }
+  if(!cfg || typeof cfg !== 'object' || !cfg.apiKey || !cfg.projectId){
+    setAuthGateNotice("That doesn't look like a complete config — it needs at least apiKey and projectId.");
+    return;
+  }
+  setFbConfig(cfg);
+  setAuthGateNotice('');
+  document.getElementById('fbSetupPane').classList.add('hidden');
+  document.getElementById('fbAuthPane').classList.remove('hidden');
+  await initFirebase();
+}
+function editFbConfig(){
+  document.getElementById('fbSetupPane').classList.remove('hidden');
+  document.getElementById('fbAuthPane').classList.add('hidden');
+  const cfg=getFbConfig(); if(cfg) document.getElementById('fbConfigInput').value = JSON.stringify(cfg,null,2);
+}
+async function submitAuthForm(){
+  const mode = document.getElementById('authSubmitBtn').dataset.mode || 'login';
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPassword').value;
+  if(!email || !pass){ setAuthGateNotice('Enter an email and password.'); return; }
+  if(!fbAuth){ setAuthGateNotice('Firebase is not connected yet.'); return; }
+  try{
+    if(mode==='signup') await fbAuth.createUserWithEmailAndPassword(email, pass);
+    else await fbAuth.signInWithEmailAndPassword(email, pass);
+  }catch(e){
+    setAuthGateNotice(friendlyAuthError(e));
+  }
+}
+async function googleSignIn(){
+  if(!fbAuth){ setAuthGateNotice('Firebase is not connected yet. Paste the config first.'); return; }
+  try{
+    const provider = new window.firebase.auth.GoogleAuthProvider();
+    await fbAuth.signInWithPopup(provider);
+  }catch(e){
+    setAuthGateNotice(friendlyAuthError(e));
+  }
+}
+function skipCloud(){
+  window.__orionSkipCloud = true;
+  hideAuthGate();
+  toast('Using this device only. Cloud sync is off.');
+}
+function signOutUser(){
+  if(fbAuth) fbAuth.signOut();
+  closeAccount();
+  window.__orionSkipCloud = false;
+}
+async function bootAuth(){
+  if(!pageProtocolOk()){
+    showAuthGate();
+    setAuthGateNotice(envBlockMessage());
+  }
+  const cfg = getFbConfig();
+  if(!cfg){
+    showAuthGate();
+    document.getElementById('fbSetupPane').classList.remove('hidden');
+    document.getElementById('fbAuthPane').classList.add('hidden');
+    return;
+  }
+  document.getElementById('fbSetupPane').classList.add('hidden');
+  document.getElementById('fbAuthPane').classList.remove('hidden');
+  showAuthGate();
+  await initFirebase();
+}
+bootAuth();
+/* =================== /FIREBASE ==================== */
+
+let profile = lsGet('profile',{name:'Guest'});
+function renderSettings(){
+  document.getElementById('settingsName').value = profile.name || '';
+  setNameButtons(false);
+  const theme = lsGet('theme','light');
+  document.getElementById('themeSelect').value = theme==='dark' ? 'dark' : 'light';
+  renderProviders();
+  document.getElementById('fbAccountEmail').textContent = fbUser ? (fbUser.email || 'Signed in') : 'Not connected';
+  const admin = isAdmin();
+  document.getElementById('adminBlock').classList.toggle('hidden', !admin);
+  document.getElementById('adminUserLine').textContent = admin ? ('Signed in as '+fbUser.email) : '';
+}
+function saveTheme(){
+  const theme=document.getElementById('themeSelect').value;
+  lsSet('theme', theme); applyTheme(theme);
+}
+function applyTheme(theme){ document.documentElement.setAttribute('data-theme', theme==='dark'?'dark':'light'); }
+applyTheme(lsGet('theme','light'));
+async function exportMyData(){
+  const data={
+    profile: await storeGet('profile', profile),
+    chats: await storeGet('chatHistory', chats),
+    memory: await storeGet('memory', {}),
+    notes: await storeGet('kbNotes', []),
+    files: await storeGet('fileManager', fileManager)
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='orion-export.json'; a.click();
+}
+async function deleteMyAccount(){
+  if(!confirm('Delete your Orion account and the data saved on this login?')) return;
+  if(fbUser && fbDb){
+    const keys=['profile','fileManager','memory','kbNotes','chatHistory','codeWorkspace'];
+    for(const k of keys){
+      try{ await fbDb.collection('users').doc(fbUser.uid).collection('data').doc(k).delete(); }catch(e){}
+    }
+    try{ await fbUser.delete(); }
+    catch(e){ toast('Sign out, sign in again, then delete.'); return; }
+  }
+  localStorage.clear(); location.reload();
+}
+function onNameInput(){
+  const dirty = document.getElementById('settingsName').value !== (profile.name||'');
+  setNameButtons(dirty);
+}
+function setNameButtons(enabled){
+  document.getElementById('nameSaveBtn').disabled = !enabled;
+  document.getElementById('nameCancelBtn').disabled = !enabled;
+}
+async function saveProfile(){
+  const val = document.getElementById('settingsName').value.trim();
+  profile.name = val || 'Guest';
+  await storeSet('profile',profile);
+  applyProfile();
+  document.getElementById('settingsName').value = profile.name;
+  setNameButtons(false);
+  toast('Name saved');
+}
+function cancelProfile(){
+  document.getElementById('settingsName').value = profile.name || '';
+  setNameButtons(false);
+}
+function applyProfile(){
+  document.getElementById('userNameDisplay').textContent = profile.name || 'Guest';
+  document.getElementById('accName').textContent = profile.name || 'Guest';
+}
+applyProfile();
+
+const providers=['Anthropic (Claude)','OpenAI','Google Gemini'];
+function keyFieldId(p){ return 'key_'+p.replace(/[^a-zA-Z0-9]/g,''); }
+function renderProviders(){
+  let keys=lsGet('providerKeys',{});
+  document.getElementById('providerList').innerHTML = providers.map(p=>{
+    if(p.startsWith('Anthropic')){
+      return `<div class="card"><div class="row"><b style="font-size:14px;">${p}</b><span class="muted" style="font-size:12px;">Active</span></div></div>`;
+    }
+    const val = keys[p]||'';
+    return `<div class="card">
+      <div class="row"><b style="font-size:14px;">${p}</b>${val?'<span class="muted" style="font-size:12px;">Key saved</span>':''}</div>
+      <input class="input" style="margin-top:8px;" id="${keyFieldId(p)}" placeholder="Paste API key" value="${val.replace(/"/g,'&quot;')}">
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn" style="flex:1;font-size:13px;padding:10px;" onclick="saveProviderKey('${p}')">Save</button>
+        <button class="btn secondary" style="flex:1;font-size:13px;padding:10px;" onclick="replaceProviderKey('${p}')">Replace</button>
+        <button class="btn secondary" style="flex:1;font-size:13px;padding:10px;" onclick="removeProviderKey('${p}')">🗑️ Remove</button>
+      </div>
+      ${p.includes('Gemini') ? `<a class="btn secondary" style="display:block;margin-top:8px;text-align:center;text-decoration:none;" href="${GEMINI_HELP}" target="_blank" rel="noopener">▶️ How to get your API key</a>` : ''}
+    </div>`;
+  }).join('');
+}
+function saveProviderKey(p){
+  const input=document.getElementById(keyFieldId(p));
+  const v=input.value.trim();
+  if(!v){ toast('Enter a key first'); return; }
+  let keys=lsGet('providerKeys',{}); keys[p]=v; lsSet('providerKeys',keys);
+  toast(p+' key saved'); renderProviders();
+}
+function replaceProviderKey(p){
+  const input=document.getElementById(keyFieldId(p));
+  input.value=''; input.focus();
+  toast('Enter a new key, then press Save');
+}
+function removeProviderKey(p){
+  let keys=lsGet('providerKeys',{}); delete keys[p]; lsSet('providerKeys',keys);
+  toast(p+' key removed'); renderProviders();
+}
+
+function typeText(el, text, totalMs){
+  return new Promise(resolve=>{
+    if(!text){ el.textContent=''; resolve(); return; }
+    const duration = totalMs || Math.min(2200, Math.max(400, text.length*10));
+    const steps = Math.max(1, Math.round(duration/28));
+    const chunk = Math.max(1, Math.ceil(text.length/steps));
+    let i=0;
+    el.textContent='';
+    const tick=()=>{
+      i += chunk;
+      el.textContent = text.slice(0,i);
+      if(i<text.length){ setTimeout(tick,28); } else { resolve(); }
+    };
+    tick();
+  });
+}
+
+async function askOrion(prompt, systemHint){
+  try{
+    if(window.claude && window.claude.complete){
+      const full = systemHint ? (systemHint+"\n\n"+prompt) : prompt;
+      const res = await window.claude.complete(full);
+      return res;
+    }
+  }catch(e){ console.error(e); }
+  return AI_OFF;
+}
+
+const AI_OFF = "Orion isn't connected to AI. Please add an API key in Settings under the matching provider.";
+const ADMIN_EMAIL = "pranaydevulapally2070@gmail.com";
+const GEMINI_HELP = "https://youtu.be/Cl4XKgz6EJQ";
+function isAdmin(){ return !!(fbUser && fbUser.email && fbUser.email.toLowerCase()===ADMIN_EMAIL); }
+
+
+function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function normalizeChats(raw){
+  if(!Array.isArray(raw) || !raw.length) return [];
+  if(raw[0] && Array.isArray(raw[0].messages)) return raw;
+  if(raw[0] && raw[0].role){
+    const title = (raw.find(m=>m.role==='user')||{}).text || 'Chat';
+    return [{id:Date.now(), title:String(title).slice(0,42), messages:raw}];
+  }
+  return [];
+}
+let chats = normalizeChats(lsGet('chatHistory',[]));
+let activeChatId = chats[0] ? chats[0].id : null;
+function activeChat(){ return chats.find(c=>c.id===activeChatId) || null; }
+function saveChats(){ storeSet('chatHistory', chats); }
+function newChat(){
+  const c={id:Date.now(), title:'New chat', messages:[]};
+  chats.unshift(c); activeChatId=c.id; saveChats(); renderChatLog();
+}
+function deleteActiveChat(){ if(activeChatId) deleteChat(activeChatId); }
+function deleteChat(id){
+  if(!confirm('Delete this chat?')) return;
+  chats = chats.filter(c=>c.id!==id);
+  if(activeChatId===id) activeChatId = chats[0] ? chats[0].id : null;
+  saveChats(); renderChatLog();
+}
+function deleteAllChats(){
+  if(!chats.length){ toast('No chats to delete'); return; }
+  if(!confirm('Delete all chats?')) return;
+  chats=[]; activeChatId=null; saveChats(); renderChatLog(); toast('Chats deleted');
+}
+function openChat(id){ activeChatId=id; openModule('chat'); renderChatLog(); }
+function renderChatLog(){
+  const log=document.getElementById('chatLog');
+  const chat=activeChat();
+  const msgs=chat?chat.messages:[];
+  log.innerHTML = msgs.length ? msgs.map(m=>`<div class="bubble ${m.role==='user'?'user':'assistant'}">${escapeHtml(m.text)}</div>`).join('') : '<div class="empty-note">Start a chat.</div>';
+  log.scrollTop = log.scrollHeight;
+  renderRecentChats();
+}
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim(); if(!text) return;
+  if(!activeChat()) newChat();
+  const chat=activeChat();
+  if(chat.title==='New chat') chat.title=text.slice(0,42);
+  chat.messages.push({role:'user',text}); input.value=''; renderChatLog();
+  chat.messages.push({role:'assistant',text:''}); renderChatLog();
+  const log=document.getElementById('chatLog');
+  const bubbleEl = log.lastElementChild;
+  bubbleEl.innerHTML = '<span class="spinner"></span>';
+  const reply = await askOrion(text,"You are Orion, a helpful AI operating system assistant. Be concise and practical.");
+  chat.messages[chat.messages.length-1] = {role:'assistant',text:reply};
+  saveChats();
+  await typeText(bubbleEl, reply);
+  renderRecentChats();
+}
+function renderRecentChats(){
+  const list=document.getElementById('recentChatsList');
+  if(!chats.length){ list.innerHTML='<div class="empty-note">No chats yet. Open Main AI Assistant.</div>'; return; }
+  list.innerHTML = chats.map(c=>{
+    const last=c.messages[c.messages.length-1];
+    return `<div class="chat-preview"><div class="row"><b onclick="openChat(${c.id})" style="cursor:pointer;">${escapeHtml(c.title||'Chat')}</b><span class="small-link" onclick="deleteChat(${c.id})">🗑️ Delete</span></div><p onclick="openChat(${c.id})" style="cursor:pointer;">${escapeHtml(last?.text||'')}</p></div>`;
+  }).join('');
+}
+renderChatLog();
+
+let codeWorkspace = lsGet('codeWorkspace', {
+  files:{
+    'index.html':'<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Hi</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <header>\n    <h1>Hi</h1>\n    <p>Built with Orion Task Solver</p>\n  </header>\n  <main>\n    <section>\n      <h2>About</h2>\n      <p>This prototype was generated from your request: Hi</p>\n    </section>\n  </main>\n  <script src="app.js"><\/script>\n</body>\n</html>',
+    'styles.css':'body{font-family:sans-serif;margin:0;padding:24px;background:#F3EDE3;color:#1B1F3B;}\nheader h1{margin-bottom:4px;}',
+    'app.js':'console.log("Orion project ready");'
+  },
+  active:'index.html'
+});
+function saveCodeWS(){ storeSet('codeWorkspace',codeWorkspace); }
+function codeTab(name){
+  ['explorer','git','editor','preview'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+    document.getElementById('codePane-'+t).classList.toggle('hidden',t!==name);
+  });
+  if(name==='explorer') renderCodeExplorer();
+  if(name==='editor') loadActiveFileIntoEditor();
+  if(name==='preview') renderCodeOutput();
+}
+function renderCodeOutput(){
+  const name = codeWorkspace.active || '';
+  const frame = document.getElementById('codeOutputFrame');
+  if(/\.py$/i.test(name)){
+    frame.srcdoc = '<p style="font-family:sans-serif;padding:16px;">Python is saved in this file. A full Python computer is not running in the browser. Use HTML, CSS, or JS for a live preview.</p>';
+    return;
+  }
+  const html = codeWorkspace.files['index.html']||'';
+  const css = codeWorkspace.files['styles.css']||'';
+  const js = codeWorkspace.files['app.js']||'';
+  let full = html;
+  full = full.includes('</head>') ? full.replace('</head>',`<style>${css}<\/style></head>`) : `<style>${css}<\/style>`+full;
+  full = full.includes('</body>') ? full.replace('</body>',`<script>${js}<\/script></body>`) : full+`<script>${js}<\/script>`;
+  frame.srcdoc = full;
+}
+const SNIPS = {
+  html:'<div>\n  <h1>Title</h1>\n  <p>Text</p>\n</div>\n',
+  css:'body {\n  font-family: sans-serif;\n  margin: 0;\n}\n',
+  js:'function main() {\n  console.log("hi");\n}\nmain();\n',
+  py:'print("hi")\n'
+};
+function insertSnippet(kind){
+  const area=document.getElementById('codeArea');
+  const snip=SNIPS[kind]||'';
+  const start=area.selectionStart||area.value.length;
+  area.value=area.value.slice(0,start)+snip+area.value.slice(start);
+  saveCodeEdit(); area.focus();
+}
+
+/* Coding Studio can be opened standalone (returns to Home) or from Task Solver (returns there) */
+let codingReturnTarget = null;
+function openCodingFrom(target){
+  codingReturnTarget = target || null;
+  document.getElementById('codingCloseBtn').textContent = codingReturnTarget ? '‹ Back' : 'Close';
+  openModule('coding');
+}
+function closeCoding(){
+  closeModule('coding');
+  if(codingReturnTarget){
+    const target = codingReturnTarget;
+    codingReturnTarget = null;
+    openModule(target);
+  }
+}
+function renderCodeExplorer(){
+  const list=document.getElementById('fileExplorerList');
+  list.innerHTML = Object.keys(codeWorkspace.files).map(f=>
+    `<div class="explorer-item" style="display:flex;justify-content:space-between;"><span onclick="openCodeFile('${f}')">📄 ${f}</span><span onclick="deleteCodeFile('${f}')">🗑️</span></div>`).join('');
+}
+function deleteCodeFile(name){
+  if(!confirm('Delete '+name+'?')) return;
+  delete codeWorkspace.files[name];
+  const left=Object.keys(codeWorkspace.files);
+  codeWorkspace.active=left[0]||'';
+  saveCodeWS(); renderCodeExplorer();
+}
+function openCodeFile(name){
+  codeWorkspace.active = name; saveCodeWS();
+  codeTab('editor');
+}
+function loadActiveFileIntoEditor(){
+  document.getElementById('editorFileName').textContent = codeWorkspace.active;
+  document.getElementById('codeActiveFile').textContent = '/'+codeWorkspace.active;
+  document.getElementById('codeArea').value = codeWorkspace.files[codeWorkspace.active] || '';
+}
+function saveCodeEdit(){
+  codeWorkspace.files[codeWorkspace.active] = document.getElementById('codeArea').value;
+  saveCodeWS();
+}
+function closeCodeFile(){ codeTab('explorer'); }
+function addCodeFile(){
+  const name = prompt('New file name (e.g. about.html)');
+  if(!name) return;
+  codeWorkspace.files[name] = '';
+  codeWorkspace.active = name;
+  saveCodeWS(); openCodeFile(name);
+}
+async function askOrionForCode(){
+  const req = prompt('What should Orion add or change in this project?');
+  if(!req) return;
+  toast('Orion is coding...');
+  const filesDump = Object.entries(codeWorkspace.files).map(([n,c])=>`--- ${n} ---\n${c}`).join('\n\n');
+  const reply = await askOrion(
+    `Current project files:\n${filesDump}\n\nRequest: ${req}\n\nReturn ONLY the full updated content for index.html, no explanation, no markdown fences.`,
+    "You are a web developer editing a small static HTML/CSS/JS project."
+  );
+  codeWorkspace.files['index.html'] = reply.replace(/^```[a-z]*\n?|```$/g,'');
+  saveCodeWS(); codeWorkspace.active='index.html'; openCodeFile('index.html');
+  toast('Updated index.html');
+}
+function runPreview(){
+  const html = codeWorkspace.files['index.html']||'';
+  const css = codeWorkspace.files['styles.css']||'';
+  const js = codeWorkspace.files['app.js']||'';
+  const full = html.replace('</head>',`<style>${css}</style></head>`).replace('</body>',`<script>${js}<\/script></body>`);
+  const w = window.open('','_blank');
+  if(w){ w.document.open(); w.document.write(full); w.document.close(); }
+  else toast('Allow pop-ups to preview');
+}
+function gitImport(){
+  const repo=document.getElementById('gitRepoInput').value.trim();
+  document.getElementById('gitMsg').textContent = repo ? 'Git integration is coming soon — not connected in this build yet.' : 'Enter a repo first.';
+}
+renderCodeExplorer();
+
+async function runTaskSolver(){
+  const input=document.getElementById('taskInput');
+  const req=input.value.trim(); if(!req) return;
+  input.value='';
+  const log=document.getElementById('taskLog');
+  log.innerHTML += `<div class="bubble user" style="margin-left:auto;">${escapeHtml(req)}</div>`;
+  setChip('plan',true);
+  const loadingId='tl'+Date.now();
+  log.innerHTML += `<div class="loading-msg" id="${loadingId}"><span class="spinner"></span> Orion is planning and building...</div>`;
+  const reply = await askOrion(
+    `Build request: "${req}". Return ONLY the full HTML content for a single-file index.html prototype (inline <style> and <script> is fine) implementing this. No explanation, no markdown fences.`,
+    "You are Orion Task Solver, an execution engine that turns a short request into a working HTML prototype."
+  );
+  document.getElementById(loadingId).remove();
+  setChip('design',true); setChip('build',true); setChip('prototype',true); setChip('test',true);
+  const cleaned = reply.replace(/^```[a-z]*\n?|```$/g,'');
+  codeWorkspace.files['index.html']=cleaned; saveCodeWS();
+
+  const introId='ti'+Date.now();
+  log.innerHTML += `<div class="bubble assistant" id="${introId}"></div>`;
+  await typeText(document.getElementById(introId), "Here's the code I built for your request:");
+
+  const blockId='cb'+Date.now();
+  log.innerHTML += `
+    <div class="card" style="background:#14162a;border-color:#14162a;">
+      <pre id="${blockId}" style="margin:0;white-space:pre-wrap;word-break:break-word;color:#e5e5ef;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;max-height:260px;overflow-y:auto;"></pre>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn" style="flex:1;" onclick="previewFromTask()">Preview</button>
+      <button class="btn secondary" style="flex:1;" onclick="deployFromTask()">Deploy · GitHub</button>
+    </div>`;
+  document.getElementById(blockId).textContent = cleaned;
+  log.scrollIntoView({block:'end'});
+}
+function previewFromTask(){
+  openCodingFrom('task');
+  codeTab('preview');
+}
+function deployFromTask(){
+  toast('Deploy via GitHub — coming soon');
+}
+function setChip(name,done){
+  const el=document.getElementById('chip-'+name);
+  el.classList.toggle('done',done);
+  el.textContent = (done?'✓ ':'○ ')+ el.textContent.slice(2);
+}
+
+async function runWriting(){
+  const type=document.getElementById('writingType').value;
+  const prompt_=document.getElementById('writingPrompt').value.trim();
+  if(!prompt_) return;
+  document.getElementById('writingLoading').innerHTML='<div class="loading-msg"><span class="spinner"></span> Writing...</div>';
+  document.getElementById('writingOutputWrap').classList.add('hidden');
+  const reply = await askOrion(`Task type: ${type}. Request: ${prompt_}`,
+    "You are Orion Writing Studio. Produce polished, ready-to-use written content matching the requested type. Output only the final content.");
+  document.getElementById('writingLoading').innerHTML='';
+  document.getElementById('writingOutputWrap').classList.remove('hidden');
+  await typeText(document.getElementById('writingOutput'), reply);
+}
+function copyText(id){
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>toast('Copied'));
+}
+
+let lastResearch = null;
+async function runResearch(){
+  const topic=document.getElementById('researchTopic').value.trim(); if(!topic) return;
+  document.getElementById('researchLoading').innerHTML='<div class="loading-msg"><span class="spinner"></span> Researching...</div>';
+  document.getElementById('researchOutputWrap').classList.add('hidden');
+  const reply = await askOrion(`Topic: ${topic}`,
+    "You are Orion Research Assistant. Produce a well-organized research report with clear headings covering key facts, context, and current understanding of the topic.");
+  document.getElementById('researchLoading').innerHTML='';
+  document.getElementById('researchOutputWrap').classList.remove('hidden');
+  await typeText(document.getElementById('researchOutput'), reply);
+  lastResearch = {title:topic, content:reply};
+}
+async function saveResearchToKB(){
+  if(!lastResearch) return;
+  let notes=await storeGet('kbNotes',[]);
+  notes.unshift({id:Date.now(), title:lastResearch.title, content:lastResearch.content, updated:new Date().toISOString()});
+  await storeSet('kbNotes',notes);
+  toast('Saved to Knowledge Base');
+}
+
+async function runDesign(){
+  const p=document.getElementById('designPrompt').value.trim(); if(!p) return;
+  document.getElementById('designLoading').innerHTML='<div class="loading-msg"><span class="spinner"></span> Designing...</div>';
+  document.getElementById('designOutputWrap').classList.add('hidden');
+  const reply = await askOrion(`Screen/flow to design: ${p}\n\nList the screen's sections top-to-bottom as short labels, one per line, prefixed with "- ". Then on a new line write "NOTES:" followed by 2-3 short UX notes.`,
+    "You are Orion UI/UX Designer, sketching a simple layout outline.");
+  document.getElementById('designLoading').innerHTML='';
+  const parts = reply.split(/NOTES:/i);
+  const layoutPart = parts[0]; const notesPart = parts[1]||'';
+  const items = (layoutPart||'').split('\n').map(l=>l.replace(/^-\s*/,'').trim()).filter(Boolean);
+  document.getElementById('wireframeBox').innerHTML = items.map(i=>
+    `<div style="border:1px dashed var(--border);border-radius:10px;padding:14px;margin-bottom:8px;color:var(--muted);font-size:14px;">${escapeHtml(i)}</div>`).join('') || '<div class="muted">No layout generated.</div>';
+  document.getElementById('designOutputWrap').classList.remove('hidden');
+  await typeText(document.getElementById('designNotes'), notesPart.trim() || AI_OFF);
+}
+function clearDesign(){
+  document.getElementById('wireframeBox').innerHTML='';
+  document.getElementById('designNotes').textContent='';
+  document.getElementById('designOutputWrap').classList.add('hidden');
+}
+function downloadDesignPng(){
+  const text=(document.getElementById('wireframeBox').innerText||'Wireframe')+'\n'+(document.getElementById('designNotes').innerText||'');
+  const canvas=document.createElement('canvas');
+  canvas.width=900; canvas.height=1200;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#F3EDE3'; ctx.fillRect(0,0,900,1200);
+  ctx.fillStyle='#1B1F3B'; ctx.font='22px sans-serif';
+  text.split('\n').slice(0,32).forEach((line,i)=>ctx.fillText(line.slice(0,52), 40, 70+i*34));
+  const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download='orion-wireframe.png'; a.click();
+}
+
+let fileManager = lsGet('fileManager', {folders:[]});
+let currentFolderId=null;
+function saveFM(){ storeSet('fileManager',fileManager); }
+function renderFiles(){
+  document.getElementById('filesRootView').classList.remove('hidden');
+  document.getElementById('filesFolderView').classList.add('hidden');
+  const list=document.getElementById('folderList');
+  document.getElementById('noFoldersMsg').classList.toggle('hidden', fileManager.folders.length>0);
+  list.innerHTML = fileManager.folders.map(f=>
+    `<div class="list-item"><span onclick="openFolder(${f.id})" style="cursor:pointer;">📁 ${escapeHtml(f.name)}</span><span><span class="muted">${f.files.length} files</span> <span class="small-link" onclick="deleteFolder(${f.id})">🗑️</span></span></div>`).join('');
+}
+function deleteFolder(id){
+  if(!confirm('Delete this folder and its files?')) return;
+  fileManager.folders=fileManager.folders.filter(f=>f.id!==id);
+  saveFM(); renderFiles();
+}
+function createFolder(){
+  const name=prompt('Folder name'); if(!name) return;
+  fileManager.folders.push({id:Date.now(), name, files:[]}); saveFM(); renderFiles();
+}
+function openFolder(id){
+  currentFolderId=id;
+  const f=fileManager.folders.find(x=>x.id===id);
+  document.getElementById('filesRootView').classList.add('hidden');
+  document.getElementById('filesFolderView').classList.remove('hidden');
+  document.getElementById('folderTitle').textContent = f.name;
+  renderFolderFiles();
+}
+function renderFolderFiles(){
+  const f=fileManager.folders.find(x=>x.id===currentFolderId);
+  const list=document.getElementById('folderFileList');
+  list.innerHTML = f.files.length ? f.files.map(file=>
+    `<div class="list-item"><span style="cursor:pointer;" onclick="openFileEditor(${file.id})">📄 ${escapeHtml(file.name)}</span><span><span class="small-link" onclick="downloadFile(${file.id})">⬇️</span> <span class="small-link" onclick="deleteFile(${file.id})">🗑️</span></span></div>`).join('')
+    : '<div class="empty-note">No files yet.</div>';
+  document.getElementById('fileEditor').classList.add('hidden');
+}
+let openFileId=null;
+function openFileEditor(id){
+  const f=fileManager.folders.find(x=>x.id===currentFolderId);
+  const file=f.files.find(x=>x.id===id); if(!file) return;
+  openFileId=id;
+  document.getElementById('fileEditor').classList.remove('hidden');
+  document.getElementById('fileEditorName').textContent=file.name;
+  document.getElementById('fileEditorBody').value=file.content||'';
+}
+function saveOpenFile(){
+  const f=fileManager.folders.find(x=>x.id===currentFolderId);
+  const file=f && f.files.find(x=>x.id===openFileId); if(!file) return;
+  file.content=document.getElementById('fileEditorBody').value;
+  saveFM();
+}
+function downloadFile(id){
+  const f=fileManager.folders.find(x=>x.id===currentFolderId);
+  const file=f.files.find(x=>x.id===id); if(!file) return;
+  const blob=new Blob([file.content||''],{type:'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name||'file.txt'; a.click();
+}
+function downloadOpenFile(){ if(openFileId) downloadFile(openFileId); }
+function deleteOpenFile(){ if(openFileId) deleteFile(openFileId); }
+function createFileInFolder(){
+  const name=prompt('File name'); if(!name) return;
+  const f=fileManager.folders.find(x=>x.id===currentFolderId);
+  f.files.push({id:Date.now(), name, content:''}); saveFM(); renderFolderFiles();
+}
+function deleteFile(id){
+  const f=fileManager.folders.find(x=>x.id===currentFolderId);
+  f.files = f.files.filter(x=>x.id!==id); saveFM(); renderFolderFiles();
+}
+function backToFolders(){ renderFiles(); }
+
+let lastDoc=null;
+async function runDocBuilder(){
+  const type=document.getElementById('docType').value;
+  const p=document.getElementById('docPrompt').value.trim(); if(!p) return;
+  document.getElementById('docLoading').innerHTML='<div class="loading-msg"><span class="spinner"></span> Building document...</div>';
+  document.getElementById('docOutputWrap').classList.add('hidden');
+  const reply = await askOrion(`Document type: ${type}. Content brief: ${p}`,
+    "You are Orion Document Builder. Produce a clean, well-structured document with a title and sections.");
+  document.getElementById('docLoading').innerHTML='';
+  document.getElementById('docOutputWrap').classList.remove('hidden');
+  await typeText(document.getElementById('docOutput'), reply);
+  lastDoc = reply;
+}
+function downloadDoc(){
+  if(!lastDoc) return;
+  const blob = new Blob([lastDoc],{type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='orion-document.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function renderKB(){
+  let notes = await storeGet('kbNotes',[]);
+  const q = (document.getElementById('kbSearch')?.value||'').toLowerCase();
+  const filtered = notes.filter(n=> n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
+  document.getElementById('kbEmpty').classList.toggle('hidden', notes.length>0);
+  document.getElementById('kbList').innerHTML = filtered.map(n=>
+    `<div class="card" style="cursor:pointer;" onclick="openKB(${n.id})"><b style="font-size:15px;">${escapeHtml(n.title)}</b>
+      <p class="muted" style="font-size:13px;margin:6px 0;white-space:pre-wrap;">${escapeHtml((n.content||'').slice(0,160))}${(n.content||'').length>160?'…':''}</p>
+      <span class="small-link" onclick="event.stopPropagation();deleteKB(${n.id})">🗑️ Delete</span></div>`).join('');
+}
+let openNoteId=null;
+async function openKB(id){
+  const notes=await storeGet('kbNotes',[]);
+  const n=notes.find(x=>x.id===id); if(!n) return;
+  openNoteId=id;
+  document.getElementById('kbEditor').classList.remove('hidden');
+  document.getElementById('kbTitle').value=n.title||'';
+  document.getElementById('kbBody').value=n.content||'';
+}
+async function saveKBEditor(){
+  if(!openNoteId) return;
+  let notes=await storeGet('kbNotes',[]);
+  const n=notes.find(x=>x.id===openNoteId); if(!n) return;
+  n.title=document.getElementById('kbTitle').value || 'Untitled';
+  n.content=document.getElementById('kbBody').value;
+  n.updated=new Date().toISOString();
+  await storeSet('kbNotes',notes);
+}
+async function deleteOpenNote(){ if(openNoteId) deleteKB(openNoteId); }
+async function newKBNote(){
+  const title=prompt('Note title'); if(!title) return;
+  let notes=await storeGet('kbNotes',[]);
+  const id=Date.now();
+  notes.unshift({id, title, content:'', updated:new Date().toISOString()});
+  await storeSet('kbNotes',notes);
+  await renderKB();
+  openKB(id);
+}
+async function deleteKB(id){
+  if(!confirm('Delete this note?')) return;
+  let notes=await storeGet('kbNotes',[]);
+  notes = notes.filter(n=>n.id!==id);
+  await storeSet('kbNotes',notes);
+  if(openNoteId===id){ openNoteId=null; document.getElementById('kbEditor').classList.add('hidden'); }
+  renderKB();
+}
+
+async function renderMemory(){
+  const m = await storeGet('memory',{goals:'',prefs:'',projects:''});
+  document.getElementById('memGoals').value=m.goals||'';
+  document.getElementById('memPrefs').value=m.prefs||'';
+  document.getElementById('memProjects').value=m.projects||'';
+  document.getElementById('memSaveBtn').disabled = true;
+}
+function onMemInput(){ document.getElementById('memSaveBtn').disabled = false; }
+async function saveMemory(){
+  await storeSet('memory',{
+    goals:document.getElementById('memGoals').value,
+    prefs:document.getElementById('memPrefs').value,
+    projects:document.getElementById('memProjects').value
+  });
+  document.getElementById('memSaveBtn').disabled = true;
+  toast('Memory saved');
+}
+async function clearMemory(){
+  document.getElementById('memGoals').value='';
+  document.getElementById('memPrefs').value='';
+  document.getElementById('memProjects').value='';
+  await storeSet('memory',{goals:'',prefs:'',projects:''});
+  document.getElementById('memSaveBtn').disabled = true;
+  toast('Memory cleared');
+}
+
+const pluginDefs=[
+  {name:'Firebase', status:'Connected'},
+  {name:'GitHub', status:'Coming soon'},
+  {name:'Google Drive', status:'Coming soon'},
+  {name:'Notion', status:'Coming soon'},
+  {name:'Slack', status:'Coming soon'}
+];
+function renderPlugins(){
+  document.getElementById('pluginList').innerHTML = pluginDefs.map(p=>`
+    <div class="list-item">
+      <span>${p.name}</span>
+      <span class="muted" style="font-size:13px;">${p.status}</span>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
